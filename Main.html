@@ -3,9 +3,86 @@
 <head>
     <title></title>
 	<meta charset="utf-8" />
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"> </script>
+    <script type="text/javascript" src="products.json"></script>
 	<script type="text/javascript" src="ShopicruitTask.js"></script>
+
 </head>
-<body onload = "parseFile()">
-	<p>test</p>
+<body style="background-color:#1a1224;">
+	<p id="content" style="color:white;">test</p>
+    <script>
+        const KILOGRAM = 1000;
+        const ALLOWANCE_WEIGHT = 100 * KILOGRAM;
+
+        var purchases = "<ul>";
+        var validObjects = [];
+
+        var currentWeightBudget = ALLOWANCE_WEIGHT;
+        var lightestWeight = ALLOWANCE_WEIGHT;
+        var totalCost = 0;
+
+        function sortByWeight(obj1, obj2) //Sort function for sorting by ascending weight
+        {
+            if (obj1.grams < obj2.grams)
+                return -1;
+            else
+                return 1;
+        }
+
+        function CheckPurchases() //Recursively loop through the products in order of lightest to heaviest until the limit is reached.
+        {
+            for (var k in validObjects)
+            {
+                validObjects.sort(sortByWeight);
+
+                if (validObjects[k].grams < lightestWeight)
+                    lightestWeight = validObjects[k].grams;
+
+                if (validObjects[k].grams < currentWeightBudget) {
+                    currentWeightBudget -= validObjects[k].grams;
+                    totalCost += parseFloat(validObjects[k].price);
+
+                    //Display the purchase
+                    purchases += "<li>" + validObjects[k].title + ": " + validObjects[k].grams + " | REMAINING BUDGET: " + currentWeightBudget + " | Total Cost: " + totalCost + "</li>";
+                }
+                else
+                    break;
+            }
+
+            if (currentWeightBudget >= lightestWeight)
+                CheckPurchases();
+        }
+
+        $.getJSON('products.json', function (data)
+        {
+            for (var i in data.products)
+            {
+                if (data.products[i].variants.length > 0)
+                {
+                    data.products[i].variants.sort(sortByWeight);
+
+                    for(var j in data.products[i].variants)
+                    {
+                        if (data.products[i].tags.indexOf("Computer") != -1 || data.products[i].tags.indexOf("Keyboard") != -1)
+                        {
+                            //Add the item's info to the new array to be sorted by ascending weight.
+                            var potentialPurchaseObj = {
+                                title: data.products[i].title + " - " + data.products[i].variants[j].title,
+                                grams: data.products[i].variants[j].grams,
+                                price: data.products[i].variants[j].price
+                            };
+
+                            validObjects.push(potentialPurchaseObj);
+                        }
+                            
+                    }
+                }
+            }
+
+            CheckPurchases();
+
+            document.getElementById("content").innerHTML = purchases + "</ul>";
+        });
+    </script>
 </body>
 </html>
